@@ -1,0 +1,386 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 13 02:54:06 2019
+
+@author: chengcheng
+"""
+
+from sklearn import datasets
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+ds=pd.read_excel('GOT.xlsx')
+
+ds.columns
+for col in ds:
+    print(col)
+    
+pd.set_option('display.expand_frame_repr', False)
+
+ds.head()
+
+ds.shape
+
+ds.describe().round(2)
+
+ds.corr().round(2)
+
+ds.info()
+
+print(ds.isnull().sum())
+
+     ##############
+     ##    EDA   ##
+     ##############
+     
+'''
+quick conclusions can be drawn from the corresponding amounts of missing values in
+dateOfBirth and age, mother/father/heir/spouse and isAliveMother/Father/Heir/Spouse
+that these feature-pairs have corresponding missing values of each charater.
+
+the game of throne (GOT) dataset has 26 features where 18 are numerical and 8 are texts.
+.corr() and .describe() show the basic information of the 18 numerical features, where
+negative relationships can be found between 'isAlive' and features such as 
+S.No, male, book1_A_Game_Of_Thrones, popularity, numDeadRelations; and positive
+relationships in isAliveHeir, book4_A_Feast_For_Crows, isAliveFather, isAliveSpouse
+
+While there are large amount of missing values in 'isAliveHeir', 'isAliveFather', 
+'isAliveSpouse', comparisons of 'asAlive' distriution between missing-value dataset 
+and the one where 'asAlive' value is not missing were done by creating new columns
+that flag missing values: 0 if a value was not missing and 1 if a value is missing.
+'''
+for col in ds:    
+    if ds[col].isnull().any():
+        ds['m_'+col] = ds[col].isnull().astype(int)
+        
+ 
+dc=ds.corr().round(2)
+
+'''now when we run the correlation on the flagged dataset, interesting relationship 
+can be seen between 'isNobel' and 'm_title' which indicates the missing values in 
+title can be explained by the corresponding value '0' in 'isNobel' feature of those 
+characters; Therefore, there is nothing we can do with missing values in title column, 
+however, assuming that different levels of titles affect 'isAlive' differently, 
+efforts can be made on grouping titles to see if any correlation exists.
+
+Also those with missing values in 'Spouse' are those have '0' in 'isMarried', 
+hence with missing values in 'isAliveSpouse' too.
+
+The fact that so many characters have no parents and heir makes me wonder the 
+reason behind. One possibility, given the substance of these characters in majority, 
+is that they are not main characters in the series thus the scriptwriter didn't 
+bother assigning uncessary relations to them, which could be examined by the 
+relatively high negative correlations between 'popularity' and 'm_mother/father/heir',
+and the assumption that popularity is key indicator of a main character.
+The similar explanation applies to mising age/DateofBirth given the relatively high 
+negative correlation betweem m_age and popularity.
+we can also see the higher correlation in m_age than in age with 'isAlive' due 
+to the higher 1/0 ratio in the missing-value group:
+'''
+import seaborn as sns
+
+plt.figure()
+
+sns.countplot(x='m_age', hue='isAlive', data=ds, palette='RdBu') 
+
+plt.xticks([0,1], ['No', 'Yes']) 
+
+plt.show()
+'''as for the rest of the text columns that at the moment have no supportive 
+explanations: 'culture' and 'house',there is almost no correlation between 'isAlive' 
+and 'whether 'culture' or 'house' is missing'                  
+'''
+fig, ax = plt.subplots(figsize = (10, 3))
+ 
+plt.subplot(1, 2, 1)
+
+sns.countplot(x='m_culture', hue='isAlive', data=ds, palette='RdBu') 
+
+plt.xticks([0,1], ['No', 'Yes']) 
+
+plt.subplot(1, 2, 2)
+
+sns.countplot(x='m_house', hue='isAlive', data=ds, palette='RdBu') 
+
+plt.xticks([0,1], ['No', 'Yes']) 
+
+plt.show()
+'''since there is no obvious variance in 'isAlive''s 0 to 1 ratio between 
+missing-value group and with-value group,
+perhaps more insights can be drawn by digging into the groups within the culture 
+or house feature, like I suggest earlier with 'title'.
+        
+First, we can get the dummy variable from culture/house, then check if any 
+house or house have a high correlation with 'isAlive'
+'''
+dum = pd.get_dummies(ds['title'])
+
+df = pd.concat([ds, dum], axis=1) 
+
+dcorr=df.corr().round(2)
+
+
+dum = pd.get_dummies(ds['culture'])
+
+df = pd.concat([ds, dum], axis=1) 
+
+dcorr=df.corr().round(2)
+
+
+dum = pd.get_dummies(ds['house'])
+
+df = pd.concat([ds, dum], axis=1) 
+
+dcorr=df.corr().round(2)
+
+'''
+higher correlation found in:
+###  House Targaryen; 
+###  Valyrian
+# nothing significant in titles.
+    
+since all the other 'groups' have negligible correlations, I decided to group them 
+into one category and make 'house' and 'culture' binary features:
+'''
+#0 line has to be run first.
+ds.loc[ds.house != 'House Targaryen', 'house'] = 0
+
+ds.loc[ds.house == 'House Targaryen', 'house'] = 1
+
+ds.loc[ds.culture != 'Valyrian', 'culture'] = 0
+
+ds.loc[ds.culture == 'Valyrian', 'culture'] = 1
+
+dc=ds.corr().round(2)
+
+'''
+At this stage, features can be used in machine learning models are:
+popularity, numDeadRelations, male, S.No, book4_A_Feast_For_Crows, m_age,
+book1_A_Game_Of_Thrones, m_mother,m_father,m_heir
+'''
+
+X=ds.loc[:,['popularity','numDeadRelations','male','S.No',
+            'book4_A_Feast_For_Crows','m_age','book1_A_Game_Of_Thrones', 
+            'm_mother','m_father','m_heir','house','culture']]                                                
+                                                                                                     
+y=ds.loc[:,'isAlive'].values
+     
+##########Data Preparation############
+
+from sklearn.model_selection import train_test_split 
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import scale 
+
+X_scaled = scale(X) #scaling
+
+X_train,X_test,y_train,y_test=train_test_split(X_scaled,y,test_size=.1,
+                                               random_state=508)
+
+
+#########  random forest classifier  #########
+##############################################
+from sklearn.ensemble import RandomForestClassifier
+rfc = RandomForestClassifier(n_estimators = 500,
+                                     criterion = 'gini',
+                                     max_depth = None,
+                                     min_samples_leaf = 15,
+                                     bootstrap = True,
+                                     warm_start = False,
+                                     random_state = 508)
+
+rfc_fit = rfc.fit(X_train, y_train)
+
+print('Training Score', rfc.score(X_train, y_train).round(4))
+
+print('Testing Score:', rfc.score(X_test, y_test).round(4))
+
+y_pred_prob=rfc.predict_proba(X_test)[:,1]
+
+roc_auc_score(y_test,y_pred_prob)#.845
+
+from sklearn.model_selection import cross_val_score 
+
+#cv_score = cross_val_score(rfc,X,y,cv = 3)
+
+cv = cross_val_score(rfc,X,y,scoring='roc_auc',cv = 3)#mean AUC
+
+print(pd.np.mean(cv).round(3))
+
+
+#######Logistic Regression#############
+#######################################
+from sklearn.linear_model import LogisticRegression 
+lr=LogisticRegression()
+lr.fit(X_train,y_train)
+
+pred_y2=lr.predict(X_test)
+
+y_pred_prob2=lr.predict_proba(X_test)[:,1]
+
+roc_auc_score(y_test,y_pred_prob2)#0.834
+
+cv2 = cross_val_score(lr,X,y,cv = 3)
+
+print(pd.np.mean(cv2).round(3))
+
+
+   ########################
+# Creating a confusion matrix #
+   ########################
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+
+pred_y=rfc.predict(X_test)
+
+print(confusion_matrix(y_test,pred_y))
+
+labels = ['Not Alive', 'Alive']
+
+cm = confusion_matrix(y_test,pred_y)
+
+sns.heatmap(cm,
+            annot = True,
+            xticklabels = labels,
+            yticklabels = labels,
+            cmap = 'pink_r')            
+            
+plt.xlabel('Predicted')
+
+plt.ylabel('Actual')
+
+plt.title('Confusion matrix of the classifier')
+
+plt.show()
+
+####compare: logreg
+
+pred_y2=lr.predict(X_test)
+
+print(confusion_matrix(y_test,pred_y2))
+
+labels = ['Not Alive', 'Alive']
+
+cm = confusion_matrix(y_test,pred_y2)
+
+sns.heatmap(cm,
+            annot = True,
+            xticklabels = labels,
+            yticklabels = labels,
+            cmap = 'pink_r')            
+            
+plt.xlabel('Predicted')
+
+plt.ylabel('Actual')
+
+plt.title('Confusion matrix of the classifier')
+
+plt.show()
+
+########################
+# Creating a classification report
+########################
+from sklearn.metrics import classification_report
+
+print(classification_report(y_true = y_test,
+                            y_pred = pred_y))
+# Changing the labels on the classification report
+print(classification_report(y_true = y_test,
+                            y_pred = pred_y,
+                            target_names = labels))
+
+####compare: logreg
+print(classification_report(y_true = y_test,
+                            y_pred = pred_y2,
+                            target_names = labels))
+
+'''
+The overall accuracy of the model is okay:
+    
+the ability of the classifier not to label as positive a sample that is negative 
+is good: with a .94 precision in Not Alive and .81 in Alive.
+
+the ability of the classifier to find all the positive samples is good in 'Alive'
+but not good in 'Not Alive'.
+
+logistic regression has a very similar performance in prediction to Random Forest.
+
+'''
+
+
+#draw a roc#
+############
+
+from sklearn.metrics import roc_curve
+
+fpr,tpr,thresholds=roc_curve(y_test,y_pred_prob)
+
+plt.plot([0, 1], [0, 1], 'k--')
+
+plt.plot(fpr,tpr)
+
+plt.xlabel('False Positive Rate')
+
+plt.ylabel('True Positive Rate')
+
+plt.title('ROC Curve')
+
+plt.show()
+
+
+########################
+# Saving Results
+########################
+
+model_predictions_df = pd.DataFrame({'Actual' : y_test,
+                                     'rfc_Predicted': pred_y,
+                                     'lr_Predicted': pred_y2})
+
+
+model_predictions_df.to_excel("GOT_Predictions_cc.xlsx")
+
+
+
+############################################################
+###Tuing hyperparameter for RandomForestClassifier(rfc)#####
+
+from sklearn.ensemble import RandomForestClassifier
+
+# hyperparameter that have been separately tried:
+bootstrap_space = [True, False]
+
+warm_start_space = [True, False]
+
+criterion_space = ['gini', 'entropy']
+
+# creating hyperparameter grid:
+estimator_space = pd.np.arange(250, 1100, 250)
+
+leaf_space = pd.np.arange(5, 150, 15)
+
+param_grid = {'n_estimators' : estimator_space,
+              'min_samples_leaf' : leaf_space}
+
+forest= RandomForestClassifier(bootstrap=False,
+                               warm_start=True,
+                               random_state = 508,
+                               criterion='gini')
+
+forest_cv = GridSearchCV(forest, param_grid)
+
+forest_cv.fit(X_train, y_train)
+# Print the optimal parameters and best score
+print("Tuned Parameter:", full_forest_cv.best_params_)
+
+print("Tuned Accuracy:", full_forest_cv.best_score_.round(4))
+
+
+
+
+
+
+
+
+
