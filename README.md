@@ -1,6 +1,7 @@
 # Game of Thrones: prediction model with machine learning in python
 
 
+
 ### intro
 This is an individual assignment I did at school.
 For the record, I've never watched a single episode of GOT, therefore at the beginning I found the dataset particularlly challenging.
