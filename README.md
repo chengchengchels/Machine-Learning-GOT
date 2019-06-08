@@ -1,13 +1,14 @@
 # Game of Thrones: prediction model with machine learning in python
 
+
+### intro
 This is an individual assignment I did at school.
 For the record, I've never watched a single episode of GOT, therefore at the beginning I found the dataset particularlly challenging.
 As with any other brand new dataset, it simply takes time to research and learn about it during the process of exploratory data analysis(EDA).
 The code is followed by comments and explaination for every step.
+The hightest AUC score is .845/ 
 
-The AUC 
-
-
+## summary
 This dataset contains approximately 2,000 characters from the HBO series Game of Thrones. 
 I’m going to build a classification machine learning model based on this dataset, in order to predict which characters in the series will live or die. As a result, interesting findings and insights will be shared with data-driven recommendations on how to survive in Game of Thrones.
 
@@ -15,7 +16,7 @@ There are over one thousand missing values in several features, as well as miscl
 
 I tried to impute ‘male’ feature with its assuming correlation with ‘title’ feature, but result didn’t show significant improvement, therefore I ignored this issue given its not significant substance. Exploratory data analysis is conducted, facilitating feature treatment and engineering. This is not a perfect dataset, I abandoned some good ‘features’ for I don’t want to assign biased value to missing values.
 
-Initially, I used Logistic Regression classifier, of which the predictions result is included in the final excel file for comparison purpose. My final model is Random Forest Classifier, of which the highest mean AUC value after cross-validation is 0.790. (AUC score:.845)
+Initially, I used Logistic Regression classifier, of which the predictions result is included in the final excel file for comparison purpose. My final model is Random Forest Classifier, of which the highest mean AUC value after cross-validation is 0.790. 
 
 
 ### Insights & Recommendations
