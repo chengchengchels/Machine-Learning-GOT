@@ -6,7 +6,7 @@ This is an individual assignment I did at school.
 For the record, I've never watched a single episode of GOT, therefore at the beginning I found the dataset particularlly challenging.
 As with any other brand new dataset, it simply takes time to research and learn about it during the process of exploratory data analysis(EDA).
 The code is followed by comments and explaination for every step.
-The hightest AUC score is .845/ 
+The hightest AUC score is .845.
 
 ## summary
 This dataset contains approximately 2,000 characters from the HBO series Game of Thrones. 
@@ -24,11 +24,14 @@ In general, the earlier a character shows up in the show, the more likely this c
 For those who have incomplete profile in terms of age, mother, father and heir are more likely to live, presumably because they are not popular main characters who are more involved in dangerous life-threatening plots. But within the small group of people who have heir, they have a high chance to live if their heir is alive.
 The Valyrian culture group is associated with high risk of dying, so are people from House Targaryen.
 
-Survival tips:
+### Survival tips:
 Stay low key, popularity comes with risk. But if you are a main character, make sure your heir safe and sound.
 Avoid showing up in book1: A Game of Thrones, but if possible, do show you face in book4: A Feast for Crows.
 Be in a family with most relations alive, protect your family.
 Stay vigilant if you’re from Valyrian or House Taragaryen, or if you’re male.
+
+
+
 
 
 
